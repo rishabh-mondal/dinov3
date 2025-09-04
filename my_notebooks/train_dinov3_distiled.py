@@ -37,15 +37,15 @@ PKP_ROOT = "/home/rishabh.mondal/Brick-Kilns-project/ijcai_2025_kilns/data/iclr_
 IMAGE_SIZE    = 800
 BATCH_SIZE    = 8
 NUM_WORKERS   = 8
-NUM_EPOCHS    = 20
+NUM_EPOCHS    = 10
 BACKBONE_LR   = 1e-5
 HEAD_LR       = 1e-4
 WEIGHT_DECAY  = 0.04
 NUM_CLASSES   = 4  # background + 3 kiln classes
 
-BEST_CKPT     = "best_up_val_map50.pth"
-RESULTS_CSV   = "region_eval.csv"
-LOG_DIR       = "runs/brickkiln_dinov3_up"   # TensorBoard logdir
+BEST_CKPT     = "best_pak_punjab_val_map50.pth"
+RESULTS_CSV   = "pak_punjab_region_eval.csv"
+LOG_DIR       = "runs/brickkiln_dinov3_pak_punjab"   # TensorBoard logdir
 
 
 # =========================
@@ -290,6 +290,7 @@ def validate(model, data_loader, device, writer, epoch):
 
     map_all = float(res_mc.get("map", torch.tensor(0.0)))
     map_50  = float(res_mc.get("map_50", torch.tensor(0.0)))
+    print(f"Validation Results - mAP: {map_all:.4f}, mAP@50: {map_50:.4f}")
 
     writer.add_scalar("val/mAP_all",  map_all, epoch)
     writer.add_scalar("val/mAP_50",   map_50,  epoch)
@@ -399,8 +400,8 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = create_model(dino_model, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE).to(device)
 
-    train_ds = BrickKilnDataset(root=UP_ROOT, split="train", input_size=IMAGE_SIZE)
-    val_ds   = BrickKilnDataset(root=UP_ROOT, split="val",   input_size=IMAGE_SIZE)
+    train_ds = BrickKilnDataset(root=PKP_ROOT, split="train", input_size=IMAGE_SIZE)
+    val_ds   = BrickKilnDataset(root=PKP_ROOT, split="val",   input_size=IMAGE_SIZE)
 
     train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,  num_workers=NUM_WORKERS, pin_memory=True, collate_fn=collate_fn)
     val_loader   = DataLoader(val_ds,   batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True, collate_fn=collate_fn)
@@ -457,7 +458,7 @@ def main():
         title="Uttar Pradesh — IN-REGION (test)",
         results_csv=RESULTS_CSV,
         writer=writer,
-        tag_prefix="test_in_region/uttar_pradesh",
+        tag_prefix="test_in_region/pak_punjab",
     )
 
     evaluate_region(
@@ -471,7 +472,7 @@ def main():
         title="Bangladesh — OOR (test)",
         results_csv=RESULTS_CSV,
         writer=writer,
-        tag_prefix="test_oor/bangladesh",
+        tag_prefix="test_oor/uttar_pradesh",
     )
 
     evaluate_region(
@@ -485,7 +486,7 @@ def main():
         title="Pak Punjab — OOR (test)",
         results_csv=RESULTS_CSV,
         writer=writer,
-        tag_prefix="test_oor/pak_punjab",
+        tag_prefix="test_oor/bangladesh",
     )
 
     writer.close()
@@ -494,8 +495,9 @@ def main():
 if __name__ == "__main__":
     main()
 
-"""
-Launch:
-CUDA_VISIBLE_DEVICES=3 nohup python -u train_dinov3_up_tb.py > up_train_oor_eval.log 2>&1 &
-tensorboard --logdir runs/brickkiln_dinov3_up --port 6006 --bind_all
-"""
+# """
+# Launch:
+# CUDA_VISIBLE_DEVICES=3 nohup python -u train_dinov3_distiled.py > bangladesh_train_oor_eval.log 2>&1 &
+# tensorboard --logdir runs/brickkiln_dinov3_bangladesh --port 6006 --bind_all
+
+# """
