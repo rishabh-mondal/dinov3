@@ -44,7 +44,7 @@ WEIGHT_DECAY  = 0.04
 NUM_CLASSES   = 4  # background + 3 kiln classes
 
 BEST_CKPT     = "best_pak_punjab_val_map50.pth"
-RESULTS_CSV   = "pak_punjab_region_eval.csv"
+RESULTS_CSV   = "pak_punjab_region_eval_mine.csv"
 LOG_DIR       = "runs/brickkiln_dinov3_pak_punjab"   # TensorBoard logdir
 
 
@@ -354,13 +354,13 @@ def evaluate_region(model, root: str, split: str, device, batch_size=16, num_wor
     print(f"{ca_map50:<12.2f}{mc_map50:<12.2f}{g(1):<12.2f}{g(2):<12.2f}{g(3):<12.2f}")
     print("=" * 84 + "\n")
 
-    if writer is not None:
-        prefix = f"{tag_prefix}".rstrip("/")
-        writer.add_scalar(f"{prefix}/CA_mAP50", ca_map50, 0)
-        writer.add_scalar(f"{prefix}/MC_mAP50", mc_map50, 0)
-        writer.add_scalar(f"{prefix}/CFCBK_mAP50", g(1), 0)
-        writer.add_scalar(f"{prefix}/FCBK_mAP50",  g(2), 0)
-        writer.add_scalar(f"{prefix}/Zigzag_mAP50", g(3), 0)
+    # if writer is not None:
+    #     prefix = f"{tag_prefix}".rstrip("/")
+    #     writer.add_scalar(f"{prefix}/CA_mAP50", ca_map50, 0)
+    #     writer.add_scalar(f"{prefix}/MC_mAP50", mc_map50, 0)
+    #     writer.add_scalar(f"{prefix}/CFCBK_mAP50", g(1), 0)
+    #     writer.add_scalar(f"{prefix}/FCBK_mAP50",  g(2), 0)
+    #     writer.add_scalar(f"{prefix}/Zigzag_mAP50", g(3), 0)
 
     if results_csv is not None:
         is_new = not os.path.exists(results_csv)
@@ -384,9 +384,9 @@ def split_dir(root: str, split: str) -> str:
 # Main
 # =========================
 def main():
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    # logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-    writer = SummaryWriter(LOG_DIR)
+    # writer = SummaryWriter(LOG_DIR)
 
     print(f"DINOv3 location set to {DINOV3_LOCATION}")
     dino_model = torch.hub.load(
@@ -400,52 +400,66 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = create_model(dino_model, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE).to(device)
 
-    train_ds = BrickKilnDataset(root=PKP_ROOT, split="train", input_size=IMAGE_SIZE)
-    val_ds   = BrickKilnDataset(root=PKP_ROOT, split="val",   input_size=IMAGE_SIZE)
+    # train_ds = BrickKilnDataset(root=PKP_ROOT, split="train", input_size=IMAGE_SIZE)
+    # val_ds   = BrickKilnDataset(root=PKP_ROOT, split="val",   input_size=IMAGE_SIZE)
 
-    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,  num_workers=NUM_WORKERS, pin_memory=True, collate_fn=collate_fn)
-    val_loader   = DataLoader(val_ds,   batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True, collate_fn=collate_fn)
+    # train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,  num_workers=NUM_WORKERS, pin_memory=True, collate_fn=collate_fn)
+    # val_loader   = DataLoader(val_ds,   batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True, collate_fn=collate_fn)
 
-    backbone_params, head_params = [], []
-    for name, p in model.named_parameters():
-        if not p.requires_grad:
-            continue
-        (backbone_params if name.startswith("backbone.dino") else head_params).append(p)
+    # backbone_params, head_params = [], []
+    # for name, p in model.named_parameters():
+    #     if not p.requires_grad:
+    #         continue
+    #     (backbone_params if name.startswith("backbone.dino") else head_params).append(p)
 
-    optimizer = torch.optim.AdamW(
-        [{"params": backbone_params, "lr": BACKBONE_LR},
-         {"params": head_params,     "lr": HEAD_LR}],
-        weight_decay=WEIGHT_DECAY,
-    )
-    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=NUM_EPOCHS)
+    # optimizer = torch.optim.AdamW(
+    #     [{"params": backbone_params, "lr": BACKBONE_LR},
+    #      {"params": head_params,     "lr": HEAD_LR}],
+    #     weight_decay=WEIGHT_DECAY,
+    # )
+    # lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=NUM_EPOCHS)
 
-    # Save hyperparams to TensorBoard
-    writer.add_text("hparams", f"IMAGE_SIZE={IMAGE_SIZE}, BATCH_SIZE={BATCH_SIZE}, "
-                               f"BACKBONE_LR={BACKBONE_LR}, HEAD_LR={HEAD_LR}, "
-                               f"WEIGHT_DECAY={WEIGHT_DECAY}, EPOCHS={NUM_EPOCHS}")
+    # # Save hyperparams to TensorBoard
+    # writer.add_text("hparams", f"IMAGE_SIZE={IMAGE_SIZE}, BATCH_SIZE={BATCH_SIZE}, "
+    #                            f"BACKBONE_LR={BACKBONE_LR}, HEAD_LR={HEAD_LR}, "
+    #                            f"WEIGHT_DECAY={WEIGHT_DECAY}, EPOCHS={NUM_EPOCHS}")
 
-    # Train with TB logging
-    best_map50 = -1.0
-    global_step = 0
-    for epoch in range(NUM_EPOCHS):
-        avg_loss, global_step = train_one_epoch(model, optimizer, train_loader, device, writer, epoch, global_step)
-        val_map, val_map50 = validate(model, val_loader, device, writer, epoch)
+    # # Train with TB logging
+    # best_map50 = -1.0
+    # global_step = 0
+    # for epoch in range(NUM_EPOCHS):
+    #     avg_loss, global_step = train_one_epoch(model, optimizer, train_loader, device, writer, epoch, global_step)
+    #     val_map, val_map50 = validate(model, val_loader, device, writer, epoch)
 
-        writer.add_scalar("epoch/train_loss", avg_loss, epoch)
-        writer.add_scalar("epoch/val_mAP",    val_map,  epoch)
-        writer.add_scalar("epoch/val_mAP50",  val_map50,epoch)
+    #     writer.add_scalar("epoch/train_loss", avg_loss, epoch)
+    #     writer.add_scalar("epoch/val_mAP",    val_map,  epoch)
+    #     writer.add_scalar("epoch/val_mAP50",  val_map50,epoch)
 
-        if val_map50 > best_map50:
-            best_map50 = val_map50
-            torch.save(model.state_dict(), BEST_CKPT)
-            writer.add_text("checkpoints", f"Saved {BEST_CKPT} at epoch {epoch+1} (val mAP50={best_map50:.4f})", epoch)
+    #     if val_map50 > best_map50:
+    #         best_map50 = val_map50
+    #         torch.save(model.state_dict(), BEST_CKPT)
+    #         writer.add_text("checkpoints", f"Saved {BEST_CKPT} at epoch {epoch+1} (val mAP50={best_map50:.4f})", epoch)
 
-        lr_scheduler.step()
-        writer.flush()
+    #     lr_scheduler.step()
+    #     writer.flush()
 
     # Load best and run IN/OOR evaluation with TB scalars
     model.load_state_dict(torch.load(BEST_CKPT, map_location="cpu"))
     model.to(device).eval()
+
+    evaluate_region(
+        model,
+        root=PKP_ROOT,
+        split="test",
+        device=device,
+        batch_size=BATCH_SIZE,
+        num_workers=NUM_WORKERS,
+        image_size=IMAGE_SIZE,
+        title="Pak_punjab — IN-REGION (test)",
+        results_csv=RESULTS_CSV,
+        # writer=writer,
+        tag_prefix="test_in_region/Pak_punjab",
+    )
 
     evaluate_region(
         model,
@@ -455,10 +469,10 @@ def main():
         batch_size=BATCH_SIZE,
         num_workers=NUM_WORKERS,
         image_size=IMAGE_SIZE,
-        title="Uttar Pradesh — IN-REGION (test)",
+        title="Uttar Pradesh — OOR (test)",
         results_csv=RESULTS_CSV,
-        writer=writer,
-        tag_prefix="test_in_region/pak_punjab",
+        # writer=writer,
+        tag_prefix="test_oor/uttar_pradesh",
     )
 
     evaluate_region(
@@ -469,27 +483,13 @@ def main():
         batch_size=BATCH_SIZE,
         num_workers=NUM_WORKERS,
         image_size=IMAGE_SIZE,
-        title="Bangladesh — OOR (test)",
-        results_csv=RESULTS_CSV,
-        writer=writer,
-        tag_prefix="test_oor/uttar_pradesh",
-    )
-
-    evaluate_region(
-        model,
-        root=PKP_ROOT,
-        split="test",
-        device=device,
-        batch_size=BATCH_SIZE,
-        num_workers=NUM_WORKERS,
-        image_size=IMAGE_SIZE,
         title="Pak Punjab — OOR (test)",
         results_csv=RESULTS_CSV,
-        writer=writer,
-        tag_prefix="test_oor/bangladesh",
+        # writer=writer,
+        tag_prefix="test_oor/Bangladesh",
     )
 
-    writer.close()
+    # writer.close()
 
 
 if __name__ == "__main__":
@@ -497,7 +497,7 @@ if __name__ == "__main__":
 
 # """
 # Launch:
-# CUDA_VISIBLE_DEVICES=3 nohup python -u train_dinov3_distiled.py > bangladesh_train_oor_eval.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=3 nohup python -u train_dinov3_distiled.py > eval.log 2>&1 &
 # tensorboard --logdir runs/brickkiln_dinov3_bangladesh --port 6006 --bind_all
 
 # """
