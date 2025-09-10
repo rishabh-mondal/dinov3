@@ -1,0 +1,2 @@
+nohup: ignoring input
+python: can't open file '/home/rishabh.mondal/Brick-Kilns-project/ijcai_2025_kilns/Foundation-Models/train_dinov3_distiled.py': [Errno 2] No such file or directory
